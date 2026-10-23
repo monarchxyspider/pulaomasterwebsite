@@ -165,7 +165,7 @@ function BrandMark({ inverted = false, compact = false, restaurantName = "Pulao 
   return (
     <a className={`brand-lockup${inverted ? " brand-lockup-inverted" : ""}${compact ? " brand-lockup-compact" : ""}`} href="#home" aria-label={`${restaurantName} home`}>
       <span className="brand-emblem" aria-hidden="true">
-        <img src="/images/pulao-master-logo.svg" alt="" width={42} height={42} decoding="async" />
+        <img src="/images/pulaomaster-logo.jpg" alt="" width={42} height={42} decoding="async" />
       </span>
       <span className="brand-wordmark"><strong>{first || "Pulao"}</strong><span>{rest.join(" ") || "Master"}</span></span>
     </a>
@@ -859,7 +859,7 @@ function AdminDashboard({
           {navItems.map((item) => <button key={item.label} className={`admin-nav-item${tab === item.label ? " admin-nav-active" : ""}`} type="button" onClick={() => setTab(item.label)}>{item.icon}<span>{item.label}</span>{item.label === "Orders" && pendingCount > 0 && <span className="nav-count">{pendingCount}</span>}</button>)}
         </nav>
         <div className="admin-sidebar-bottom">
-          <div className="admin-user"><span className="admin-avatar"><img src="/images/pulao-master-logo.svg" alt="" width={34} height={34} decoding="async" /></span><div><strong>{user.displayName || "Administrator"}</strong><small>{user.email}</small></div></div>
+          <div className="admin-user"><span className="admin-avatar"><img src="/images/pulaomaster-logo.jpg" alt="" width={34} height={34} decoding="async" /></span><div><strong>{user.displayName || "Administrator"}</strong><small>{user.email}</small></div></div>
           <button className="admin-signout" type="button" onClick={onSignOut}>Sign out <ArrowRight size={15} /></button>
           <button className="admin-back-link" type="button" onClick={onClose}><ArrowLeft size={15} /> Return to storefront</button>
         </div>

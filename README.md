@@ -2,7 +2,7 @@
 
 A responsive restaurant ordering website branded as **Pulao Master**, using the Firebase project and WhatsApp details included in the supplied reference script. The supplied starter did not contain the referenced Arzoo HTML, CSS, or `pics/` directory, so the application is implemented as a complete React/Vite project rather than a patch to missing files.
 
-The website uses contact phone `03009263111` and the matching WhatsApp number `923009263111` everywhere. The starter menu (Karahi, Kabuli Pulao, Yakhni Pulao, Bannu Beef Pulao, BBQ Platter, Biryani, and sides) is used as the initial Firebase menu only when matching dishes are not already present. A custom hero photograph is in `public/images/pulao-hero.jpg` and the restaurant logo is `public/images/pulao-master-logo.svg`.
+The website uses contact phone `03009263111` and the matching WhatsApp number `923009263111` everywhere. The starter menu (Karahi, Kabuli Pulao, Yakhni Pulao, Bannu Beef Pulao, BBQ Platter, Biryani, and sides) is used as the initial Firebase menu only when matching dishes are not already present. A custom hero photograph is in `public/images/pulao-hero.jpg` and the restaurant logo is `public/images/pulaomaster-logo.jpg`.
 
 Approved administrators: `raffaysweet@gmail.com` and `pulaomaster.com@gmail.com`.
 
