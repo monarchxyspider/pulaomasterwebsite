@@ -698,17 +698,21 @@ function AdminDashboard({
     }
   }
 
-  async function removeOrder(orderKey: string) {
+  async function removeOrder(orderKey: string, customOrderId?: string) {
     setSaving(true);
-    const order = orders.find((item) => item.databaseKey === orderKey);
+    const order = orders.find((item) => item.databaseKey === orderKey || item.id === orderKey);
+    const targetDatabaseKey = order?.databaseKey || orderKey;
+    const targetOrderId = order?.id || customOrderId;
+
     try {
-      await remove(ref(database, `orders/${orderKey}`));
-      if (order) {
-        await Promise.all([
-          remove(ref(database, `trackOrders/${order.id}`)),
-          remove(ref(database, `chats/${order.id}`)),
-        ]);
+      const deletions = [remove(ref(database, `orders/${targetDatabaseKey}`))];
+      if (targetOrderId) {
+        deletions.push(
+          remove(ref(database, `trackOrders/${targetOrderId}`)),
+          remove(ref(database, `chats/${targetOrderId}`))
+        );
       }
+      await Promise.all(deletions);
       showToast("Order record removed.", "info");
       setSelectedOrder(null);
     } catch (reason) {
@@ -970,7 +974,7 @@ function AdminDashboard({
 
       <AnimatePresence>{selectedOrder && <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onChat={() => { setSelectedOrder(null); setChatOrderId(selectedOrder.id); }} onStatus={updateOrder} onDelete={() => { setSelectedOrder(null); setConfirmAction({ kind: "order", id: selectedOrder.databaseKey, label: selectedOrder.id }); }} busy={saving} />}</AnimatePresence>
       <AnimatePresence>{chatOrderId && <ChatWindow orderId={chatOrderId} sender="Admin" onClose={() => setChatOrderId("")} />}</AnimatePresence>
-      <AnimatePresence>{confirmAction && <ConfirmDialog title={confirmAction.kind === "order" ? "Delete this order?" : "Remove this dish?"} description={confirmAction.kind === "order" ? `Order ${confirmAction.label} and its saved chat history will be permanently deleted.` : `${confirmAction.label} will be removed from the live menu.`} confirmLabel={confirmAction.kind === "order" ? "Delete order" : "Delete dish"} busy={saving} onCancel={() => setConfirmAction(null)} onConfirm={() => confirmAction.kind === "order" ? void removeOrder(confirmAction.id) : void deleteDish(confirmAction.id)} />}</AnimatePresence>
+      <AnimatePresence>{confirmAction && <ConfirmDialog title={confirmAction.kind === "order" ? "Delete this order?" : "Remove this dish?"} description={confirmAction.kind === "order" ? `Order ${confirmAction.label} and its saved chat history will be permanently deleted.` : `${confirmAction.label} will be removed from the live menu.`} confirmLabel={confirmAction.kind === "order" ? "Delete order" : "Delete dish"} busy={saving} onCancel={() => setConfirmAction(null)} onConfirm={() => confirmAction.kind === "order" ? void removeOrder(confirmAction.id, confirmAction.label) : void deleteDish(confirmAction.id)} />}</AnimatePresence>
     </motion.div>
   );
 }
@@ -1589,5 +1593,3 @@ export default function App() {
     </>
   );
 }
-
-
