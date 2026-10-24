@@ -11,18 +11,29 @@
       }
     },
     "orders": {
+      // Admin pure orders node ko ek sath fetch/listen kar sakta hai
       ".read": "auth != null && (auth.token.email == 'raffaysweet@gmail.com' || auth.token.email == 'pulaomaster.com@gmail.com')",
-      ".write": true
+      
+      "$orderId": {
+        // Normal customer apna specific order read/confirm kar sakta hai
+        ".read": true,
+        // Normal customer naya order place kar sakta hai
+        ".write": true
+      }
     },
     "trackOrders": {
       "$orderId": {
+        // Customer apna order status track kar sake
         ".read": true,
+        // Customer new order tracking entry create kar sake, jabke Admin update bhi kar sake
         ".write": "!data.exists() || (auth != null && (auth.token.email == 'raffaysweet@gmail.com' || auth.token.email == 'pulaomaster.com@gmail.com'))"
       }
     },
     "chats": {
-      ".read": true,
-      ".write": true
+      "$orderId": {
+        ".read": true,
+        ".write": true
+      }
     }
   }
 }
