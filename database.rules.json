@@ -9,6 +9,7 @@
       ".write": "auth != null && (auth.token.email == 'raffaysweet@gmail.com' || auth.token.email == 'pulaomaster.com@gmail.com')"
     },
     "orders": {
+      ".read": "auth != null && (auth.token.email == 'raffaysweet@gmail.com' || auth.token.email == 'pulaomaster.com@gmail.com')",
       "$orderId": {
         ".read": true,
         ".write": true
