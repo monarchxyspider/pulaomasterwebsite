@@ -508,14 +508,18 @@ function TrackOrderSection({ prefillId, showToast }: { prefillId: string; showTo
       if (value) {
         const nextStatus = orderStatuses.includes(value.status as OrderStatus) ? (value.status as OrderStatus) : "Pending";
         
-        // Trigger browser notification if status changes and permission is granted
         if (prevStatusRef.current && prevStatusRef.current !== nextStatus) {
           if ("Notification" in window && Notification.permission === "granted") {
-            new Notification("Order Update - Pulao Master", {
-              body: `Your order ${liveId} status is now: ${nextStatus}`,
-              icon: "/images/pulaomaster-logo.jpg",
-            });
+            try {
+              new Notification("Order Update - Pulao Master", {
+                body: `Your order ${liveId} status is now: ${nextStatus}`,
+                icon: "/images/pulaomaster-logo.jpg",
+              });
+            } catch {
+              // Browser restriction fallback
+            }
           }
+          showToast(`Order status updated to ${nextStatus}`, "info");
         }
         prevStatusRef.current = nextStatus;
         setTrack(normalizeTrack(liveId, value));
@@ -529,7 +533,7 @@ function TrackOrderSection({ prefillId, showToast }: { prefillId: string; showTo
       setError(reason.message || "Live updates stopped. Check your connection and try again.");
     });
     return unsubscribe;
-  }, [liveId]);
+  }, [liveId, showToast]);
 
   async function lookupOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1122,6 +1126,7 @@ export default function App() {
   const [authBusy, setAuthBusy] = useState(false);
   const [ownerNotice, setOwnerNotice] = useState<OwnerNotice | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [showNotificationBar, setShowNotificationBar] = useState(false);
 
   const showToast = useCallback((message: string, tone: ToastItem["tone"] = "success") => {
     setToast({ id: Date.now(), message, tone });
@@ -1189,7 +1194,6 @@ export default function App() {
       }
       setAdminAllowed(isApprovedAdminEmail(user.email));
     });
-    // Consume any leftover redirect result from an earlier sign-in attempt.
     getRedirectResult(auth).catch(() => undefined);
     return () => unsubscribe();
   }, []);
@@ -1271,7 +1275,6 @@ export default function App() {
     if (address.length < 8) { setCheckoutError("Enter a complete delivery address."); return; }
     if (!cartItems.length) { setCheckoutError("Your cart is empty. Add an available dish before checkout."); return; }
 
-    // Request notification permission on order submission
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
@@ -1345,8 +1348,6 @@ export default function App() {
     }
   }
 
-  // Owner access: one Google account chooser. No password, no redirect page.
-  // The Google email must be on the owner list, otherwise the account is signed out again.
   async function signInOwner() {
     if (authBusy) return;
     if (adminAllowed && adminUser) {
@@ -1375,7 +1376,7 @@ export default function App() {
     } catch (reason) {
       const code = authCode(reason);
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        // The user closed the Google window; nothing else to show.
+        // Closed popup
       } else if (code === "auth/popup-blocked") {
         setOwnerNotice({
           title: "Popup blocked",
@@ -1414,14 +1415,23 @@ export default function App() {
     </>
   );
 
-  // Hamburger menu: Track order sits directly below Contact.
   const mobileNav = (
     <>
       <a href="#home" onClick={() => setMobileOpen(false)}>Home</a>
       <a href="#menu" onClick={() => setMobileOpen(false)}>Menu</a>
       <a href="#about" onClick={() => setMobileOpen(false)}>Our story</a>
       <a href="#contact" onClick={() => setMobileOpen(false)}>Contact</a>
-      <a href="#track" className="nav-track-link" onClick={() => openTrack()}><Clock3 size={15} /> Track order</a>
+      <button 
+        type="button" 
+        className="button button-outline" 
+        style={{ marginTop: "10px", justifyContent: "center" }}
+        onClick={() => {
+          setMobileOpen(false);
+          setShowNotificationBar(true);
+        }}
+      >
+        <Clock3 size={15} /> Enable Order Notes
+      </button>
     </>
   );
 
@@ -1534,6 +1544,17 @@ export default function App() {
                 <form className="enquiry-form" onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); const message = `Hello ${settings.restaurantName}, my name is ${String(data.get("enquiryName") || "")}. ${String(data.get("enquiryMessage") || "")}`; window.open(`https://wa.me/${settings.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer"); event.currentTarget.reset(); }}>
                   <span className="enquiry-title">Send a quick enquiry</span><div className="enquiry-row"><label className="sr-only" htmlFor="enquiry-name">Your name</label><input id="enquiry-name" name="enquiryName" placeholder="Your name" required maxLength={60} /><label className="sr-only" htmlFor="enquiry-message">Your message</label><input id="enquiry-message" name="enquiryMessage" placeholder="How can we help?" required maxLength={300} /><button className="enquiry-send" type="submit" aria-label="Send enquiry on WhatsApp"><ArrowRight size={17} /></button></div><small>Opens a WhatsApp message to the restaurant.</small>
                 </form>
+
+                {/* Track Order Option under WhatsApp/Get in touch */}
+                <div style={{ marginTop: "20px", paddingTop: "15px", borderTop: "1px dashed rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <small style={{ opacity: 0.8, display: "block" }}>Already placed an order?</small>
+                    <strong style={{ fontSize: "0.95rem" }}>Check live status</strong>
+                  </div>
+                  <button className="button button-outline" type="button" onClick={() => openTrack()}>
+                    <Clock3 size={15} /> Track Order
+                  </button>
+                </div>
               </div>
             </section>
           </main>
@@ -1542,6 +1563,61 @@ export default function App() {
             <div className="footer-main"><div className="footer-brand"><BrandMark inverted restaurantName={settings.restaurantName} /><p>{settings.tagline}</p><span className="footer-location"><MapPin size={14} /> {settings.address}</span></div><div className="footer-links"><span>Explore</span><a href="#home">Home</a><a href="#menu">Menu</a><a href="#track">Track order</a><a href="#about">Our story</a><a href="#contact">Contact</a></div><div className="footer-links"><span>Get in touch</span><a href={`tel:${settings.contactNumber.replace(/[^\d+]/g, "")}`}>{settings.contactNumber}</a><button type="button" onClick={directWhatsApp}>WhatsApp us <ExternalLink size={13} /></button></div><div className="footer-bike"><span>On its way to your table</span><div className="bike-road"><Bike size={45} strokeWidth={1.35} /><i /></div><small>Good things are worth sharing.</small></div></div>
             <div className="footer-bottom"><span>(c) {new Date().getFullYear()} {settings.restaurantName}. All rights reserved.</span><button type="button" className="owner-access-link" onClick={ownerAccessClick}>{adminAllowed ? "Owner dashboard" : "Owner access"}</button><span>Made with care in Lahore</span></div>
           </footer>
+
+          {/* Floating Order Notification Note Bar */}
+          <AnimatePresence>
+            {showNotificationBar && (
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 50 }}
+                style={{
+                  position: "fixed",
+                  bottom: "20px",
+                  left: "20px",
+                  right: "20px",
+                  maxWidth: "420px",
+                  margin: "0 auto",
+                  backgroundColor: "#1c1917",
+                  color: "#fff",
+                  padding: "12px 16px",
+                  borderRadius: "10px",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+                  zIndex: 1000,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.88rem" }}>
+                  <Clock3 size={18} style={{ color: "#f59e0b", flexShrink: 0 }} />
+                  <span>Stay updated! You will get live status alerts for your orders.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNotificationBar(false)}
+                  style={{
+                    background: "#ef4444",
+                    border: "none",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "24px",
+                    height: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    marginLeft: "8px",
+                  }}
+                  aria-label="Close note"
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <AnimatePresence>
             {cartOpen && (
