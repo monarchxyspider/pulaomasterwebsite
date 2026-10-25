@@ -495,6 +495,7 @@ function TrackOrderSection({ prefillId, showToast }: { prefillId: string; showTo
   const [track, setTrack] = useState<TrackRecord | null>(null);
   const [liveId, setLiveId] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
+  const prevStatusRef = useRef<OrderStatus | null>(null);
 
   useEffect(() => {
     if (prefillId) setOrderId(prefillId);
@@ -505,10 +506,23 @@ function TrackOrderSection({ prefillId, showToast }: { prefillId: string; showTo
     const unsubscribe = onValue(ref(database, `trackOrders/${liveId}`), (snapshot) => {
       const value = snapshot.val() as Record<string, unknown> | null;
       if (value) {
+        const nextStatus = orderStatuses.includes(value.status as OrderStatus) ? (value.status as OrderStatus) : "Pending";
+        
+        // Trigger browser notification if status changes and permission is granted
+        if (prevStatusRef.current && prevStatusRef.current !== nextStatus) {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Order Update - Pulao Master", {
+              body: `Your order ${liveId} status is now: ${nextStatus}`,
+              icon: "/images/pulaomaster-logo.jpg",
+            });
+          }
+        }
+        prevStatusRef.current = nextStatus;
         setTrack(normalizeTrack(liveId, value));
       } else {
         setTrack(null);
         setLiveId("");
+        prevStatusRef.current = null;
         setError("This order is no longer available.");
       }
     }, (reason) => {
@@ -556,6 +570,7 @@ function TrackOrderSection({ prefillId, showToast }: { prefillId: string; showTo
     setLiveId("");
     setLast4("");
     setError("");
+    prevStatusRef.current = null;
   }
 
   return (
@@ -1255,6 +1270,11 @@ export default function App() {
     if (!isValidPakistaniPhone(phone)) { setCheckoutError("Enter a valid Pakistani mobile number, such as 03001234567."); return; }
     if (address.length < 8) { setCheckoutError("Enter a complete delivery address."); return; }
     if (!cartItems.length) { setCheckoutError("Your cart is empty. Add an available dish before checkout."); return; }
+
+    // Request notification permission on order submission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
 
     setOrderBusy(true);
     setCheckoutError("");
